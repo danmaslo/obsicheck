@@ -1,7 +1,7 @@
 {
   "id": "obsicheck",
   "name": "Obsicheck",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "minAppVersion": "1.5.0",
   "description": "Collect checkboxes from all notes in one view and complete tasks directly in their source notes.",
   "author": "danmaslo",

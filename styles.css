@@ -34,9 +34,11 @@
 .obsicheck .obsicheck-group-count { color: var(--text-faint); font-size: 11px; font-variant-numeric: tabular-nums; }
 .obsicheck .obsicheck-folder { margin: 2px 0 0 23px; color: var(--text-faint); font-size: 11px; overflow-wrap: anywhere; line-height: 1.5; }
 .obsicheck ul.obsicheck-task-list { list-style: none; margin: 8px 0 0; padding: 0; }
-.obsicheck li.obsicheck-task { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 10px; align-items: start; margin: 0; padding: 10px 6px 10px 0; border-bottom: 1px solid var(--background-modifier-border); }
+.obsicheck li.obsicheck-task { position: relative; isolation: isolate; display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 10px; align-items: start; margin: 0; padding: 12px; border-bottom: 1px solid var(--background-modifier-border); border-radius: 0; }
 .obsicheck li.obsicheck-task:last-child { border-bottom-color: transparent; }
-.obsicheck .obsicheck-task:hover { background: var(--background-modifier-hover); border-radius: 5px; }
+/* Inset the highlight vertically so rounded corners never touch the dividers. */
+.obsicheck .obsicheck-task::before { content: ""; position: absolute; inset: 4px 0; z-index: -1; border-radius: 6px; pointer-events: none; }
+.obsicheck .obsicheck-task:hover::before, .obsicheck .obsicheck-task:focus-within::before { background: var(--background-modifier-hover); }
 .obsicheck input.obsicheck-checkbox { margin: 6px 0 0; width: 16px; height: 16px; cursor: pointer; }
 /* Obsidian buttons use flex centering by default; override it explicitly. */
 .obsicheck button.obsicheck-task-text { display: block; justify-content: flex-start; align-items: flex-start; padding: 3px 0; line-height: 1.6; font-size: var(--font-ui-medium); }
