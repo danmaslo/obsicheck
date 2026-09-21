@@ -1,0 +1,19 @@
+.obsicheck { padding: 24px; }
+.obsicheck-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.obsicheck-heading h2 { margin: 0; }
+.obsicheck-summary { color: var(--text-muted); margin: 8px 0 20px; font-size: var(--font-ui-small); }
+.obsicheck-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+.obsicheck-controls input { flex: 1 1 180px; min-width: 0; }
+.obsicheck-group { margin: 0 0 24px; }
+.obsicheck-group h3 { margin: 0 0 8px; font-size: var(--font-ui-small); }
+.obsicheck button.obsicheck-source, .obsicheck button.obsicheck-task-text { background: none; box-shadow: none; border: 0; height: auto; padding: 0; text-align: left; white-space: normal; overflow-wrap: anywhere; }
+.obsicheck button.obsicheck-source { color: var(--text-accent); font-weight: var(--font-semibold); }
+.obsicheck button.obsicheck-source:hover, .obsicheck button.obsicheck-task-text:hover { text-decoration: underline; }
+.obsicheck-group ul { padding: 0; margin: 0; list-style: none; }
+.obsicheck-task { display: flex; gap: 10px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--background-modifier-border); }
+.obsicheck-task input { flex-shrink: 0; margin: 0; }
+.obsicheck button.obsicheck-task-text { flex: 1; line-height: 1.5; color: var(--text-normal); font-size: var(--font-text-size); }
+.obsicheck .is-complete button.obsicheck-task-text { color: var(--text-muted); text-decoration: line-through; }
+.obsicheck-status { font-size: var(--font-ui-smaller); color: var(--text-muted); }
+.obsicheck-empty { padding: 24px 0; color: var(--text-muted); }
+.obsicheck-warning { color: var(--text-warning); }
