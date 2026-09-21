@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { collectTasks, StaleTaskError, updateTask } from '../src/tasks';
+import { collectTasks, StaleTaskError, updateTask, updateDismissal, matchesFilter } from '../src/tasks';
 
 const location = (line: number, task: string | undefined = ' ') => ({ task, position: { start: { line } } });
 
@@ -49,4 +49,68 @@ test('preserves custom status text, Unicode, indentation and absent trailing new
   const source = '\t- [/] Vyřešit [[Poznámka]] 🧠 #úkol';
   const task = collectTasks('note.md', source, [location(0, '/')])[0];
   assert.equal(updateTask(source, source, task, true), '\t- [x] Vyřešit [[Poznámka]] 🧠 #úkol');
+});
+
+for (const newline of ['\n', '\r\n', '\r']) {
+  test(`dismiss and restore preserve source bytes with ${JSON.stringify(newline)}`, () => {
+    const source = ['# Tasks', '  > - [/] Same task  ', '- [ ] Same task', ''].join(newline);
+    const task = collectTasks('note.md', source, [location(1), location(2)])[0];
+    const dismissed = updateDismissal(source, source, task, true);
+    assert.equal(dismissed, source.replace('Same task  ', 'Same task <!-- obsicheck:dismissed -->  '));
+    const parsed = collectTasks('note.md', dismissed, [location(1), location(2)]);
+    assert.equal(parsed[0].dismissed, true);
+    assert.equal(parsed[0].completed, false);
+    assert.equal(parsed[0].text, task.text);
+    assert.equal(parsed[1].dismissed, false);
+    assert.equal(updateDismissal(dismissed, dismissed, parsed[0], false), source);
+  });
+}
+
+test('dismissal follows a task when its file is renamed and preceding lines change', () => {
+  const source = '- [ ] Keep this';
+  const task = collectTasks('old.md', source, [location(0)])[0];
+  const dismissed = updateDismissal(source, source, task, true);
+  const moved = collectTasks('Folder/renamed.md', '# New heading\n' + dismissed, [location(1)])[0];
+  assert.equal(moved.dismissed, true);
+  assert.equal(moved.text, 'Keep this');
+});
+
+test('dismissed tasks have their own filter, separate from completed and all', () => {
+  const source = '- [ ] Open\n- [x] Done\n- [ ] Ignored <!-- obsicheck:dismissed -->\n- [X] Also ignored <!-- obsicheck:dismissed -->';
+  const tasks = collectTasks('note.md', source, [0, 1, 2, 3].map(line => location(line)));
+  assert.deepEqual(tasks.filter(task => matchesFilter(task, 'open')).map(task => task.text), ['Open']);
+  assert.deepEqual(tasks.filter(task => matchesFilter(task, 'done')).map(task => task.text), ['Done']);
+  assert.equal(tasks.filter(task => matchesFilter(task, 'all')).length, 2);
+  assert.equal(tasks.filter(task => matchesFilter(task, 'dismissed')).length, 2);
+});
+
+test('dismissal refuses stale snapshots and is idempotent', () => {
+  const source = '- [ ] Duplicate\n- [ ] Duplicate';
+  const task = collectTasks('note.md', source, [location(1)])[0];
+  assert.throws(() => updateDismissal('# Heading\n' + source, source, task, true), StaleTaskError);
+  const changed = updateDismissal(source, source, task, true);
+  const dismissed = collectTasks('note.md', changed, [location(1)])[0];
+  assert.equal(updateDismissal(changed, changed, dismissed, true), changed);
+  assert.equal(updateTask(changed, changed, dismissed, true), changed.replace('- [ ] Duplicate <!--', '- [x] Duplicate <!--'));
+});
+
+test('empty checkboxes can be dismissed and restored', () => {
+  for (const source of ['- [ ]', '- [ ]   ', '- [x]\n']) {
+    const task = collectTasks('note.md', source, [location(0)])[0];
+    const changed = updateDismissal(source, source, task, true);
+    const dismissed = collectTasks('note.md', changed, [location(0)])[0];
+    assert.equal(dismissed.dismissed, true);
+    assert.equal(updateDismissal(changed, changed, dismissed, false), source);
+  }
+});
+
+test('dismissal preserves Obsidian block references at the end of the line', () => {
+  const source = '- [ ] Linked task ^my-task  \n';
+  const task = collectTasks('note.md', source, [location(0)])[0];
+  const changed = updateDismissal(source, source, task, true);
+  assert.equal(changed, '- [ ] Linked task <!-- obsicheck:dismissed --> ^my-task  \n');
+  const dismissed = collectTasks('note.md', changed, [location(0)])[0];
+  assert.equal(dismissed.text, task.text);
+  assert.equal(dismissed.dismissed, true);
+  assert.equal(updateDismissal(changed, changed, dismissed, false), source);
 });

@@ -3,3 +3,5 @@ main.js
 *.zip
 .DS_Store
 paseo.json
+test-results/
+playwright-report/

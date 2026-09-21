@@ -1,19 +1,62 @@
-.obsicheck { padding: 24px; }
-.obsicheck-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-.obsicheck-heading h2 { margin: 0; }
-.obsicheck-summary { color: var(--text-muted); margin: 8px 0 20px; font-size: var(--font-ui-small); }
-.obsicheck-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
-.obsicheck-controls input { flex: 1 1 180px; min-width: 0; }
-.obsicheck-group { margin: 0 0 24px; }
-.obsicheck-group h3 { margin: 0 0 8px; font-size: var(--font-ui-small); }
-.obsicheck button.obsicheck-source, .obsicheck button.obsicheck-task-text { background: none; box-shadow: none; border: 0; height: auto; padding: 0; text-align: left; white-space: normal; overflow-wrap: anywhere; }
-.obsicheck button.obsicheck-source { color: var(--text-accent); font-weight: var(--font-semibold); }
-.obsicheck button.obsicheck-source:hover, .obsicheck button.obsicheck-task-text:hover { text-decoration: underline; }
-.obsicheck-group ul { padding: 0; margin: 0; list-style: none; }
-.obsicheck-task { display: flex; gap: 10px; align-items: baseline; padding: 10px 0; border-bottom: 1px solid var(--background-modifier-border); }
-.obsicheck-task input { flex-shrink: 0; margin: 0; }
-.obsicheck button.obsicheck-task-text { flex: 1; line-height: 1.5; color: var(--text-normal); font-size: var(--font-text-size); }
+/* Scope every rule so the overview respects the rest of the vault's theme. */
+.obsicheck { padding: 32px 28px 48px; text-align: left; }
+.obsicheck .obsicheck-page { width: 100%; max-width: 960px; margin: 0; }
+.obsicheck .obsicheck-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+.obsicheck .obsicheck-eyebrow { color: var(--text-muted); font-size: 10px; font-weight: 600; letter-spacing: 0.12em; margin-bottom: 8px; }
+.obsicheck .obsicheck-heading h2 { margin: 0; font-size: 26px; font-weight: 650; line-height: 1.25; letter-spacing: -0.025em; }
+.obsicheck .obsicheck-summary { color: var(--text-muted); margin-top: 8px; font-size: var(--font-ui-small); }
+.obsicheck button { font-family: inherit; cursor: pointer; }
+.obsicheck button:disabled { cursor: wait; opacity: 0.5; }
+.obsicheck button:focus-visible, .obsicheck input:focus-visible { outline: 2px solid var(--interactive-accent); outline-offset: 3px; }
+.obsicheck .obsicheck-icon-button { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; gap: 6px; height: 30px; min-width: 30px; padding: 6px; color: var(--text-muted); background: transparent; box-shadow: none; border: 0; border-radius: 6px; }
+.obsicheck .obsicheck-icon-button svg { width: 16px; height: 16px; flex-shrink: 0; }
+.obsicheck .obsicheck-icon-button:hover { color: var(--text-normal); background: var(--background-modifier-hover); }
+.obsicheck .obsicheck-refresh { border: 1px solid var(--background-modifier-border); height: 34px; min-width: 34px; }
+.obsicheck .obsicheck-search { position: relative; margin-bottom: 16px; }
+.obsicheck .obsicheck-search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-faint); display: flex; pointer-events: none; }
+.obsicheck .obsicheck-search-icon svg { width: 16px; height: 16px; }
+.obsicheck .obsicheck-search input { display: block; width: 100%; height: 40px; padding: 8px 12px 8px 36px; border: 1px solid var(--background-modifier-border); border-radius: 8px; background: var(--background-primary); box-shadow: none; font-size: var(--font-ui-small); }
+.obsicheck .obsicheck-filters { display: flex; flex-wrap: wrap; gap: 6px; padding-bottom: 16px; border-bottom: 1px solid var(--background-modifier-border); }
+.obsicheck .obsicheck-filter { display: inline-flex; align-items: center; justify-content: flex-start; gap: 7px; height: 32px; padding: 6px 10px; background: transparent; color: var(--text-muted); font-size: var(--font-ui-small); border: 0; border-radius: 6px; box-shadow: none; }
+.obsicheck .obsicheck-filter:hover { background: var(--background-modifier-hover); color: var(--text-normal); }
+.obsicheck .obsicheck-filter[aria-pressed="true"] { background: var(--background-secondary); color: var(--text-normal); font-weight: 600; }
+.obsicheck .obsicheck-filter-count { color: var(--text-faint); font-size: 11px; font-variant-numeric: tabular-nums; }
+.obsicheck .obsicheck-filter[aria-pressed="true"] .obsicheck-filter-count { color: var(--text-accent); }
+.obsicheck .obsicheck-hint { margin: 12px 0 28px; font-size: var(--font-ui-smaller); color: var(--text-muted); line-height: 1.6; }
+.obsicheck .obsicheck-group { margin: 0 0 28px; }
+.obsicheck .obsicheck-group-heading { display: flex; align-items: center; justify-content: flex-start; gap: 8px; min-height: 24px; }
+.obsicheck .obsicheck-group-heading h3 { min-width: 0; margin: 0; font-size: var(--font-ui-small); line-height: 1.5; }
+.obsicheck .obsicheck-source, .obsicheck .obsicheck-task-text { border: 0; background: transparent; box-shadow: none; height: auto; min-width: 0; margin: 0; border-radius: 3px; white-space: normal; text-align: left; overflow-wrap: anywhere; color: var(--text-normal); }
+.obsicheck .obsicheck-source { display: flex; align-items: flex-start; justify-content: flex-start; gap: 8px; padding: 0; font-weight: 600; line-height: 1.5; font-size: var(--font-ui-small); }
+.obsicheck .obsicheck-source:hover { color: var(--text-accent); }
+.obsicheck .obsicheck-note-icon { display: flex; flex-shrink: 0; margin-top: 2px; color: var(--text-muted); }
+.obsicheck .obsicheck-note-icon svg { width: 15px; height: 15px; }
+.obsicheck .obsicheck-group-count { color: var(--text-faint); font-size: 11px; font-variant-numeric: tabular-nums; }
+.obsicheck .obsicheck-folder { margin: 2px 0 0 23px; color: var(--text-faint); font-size: 11px; overflow-wrap: anywhere; line-height: 1.5; }
+.obsicheck ul.obsicheck-task-list { list-style: none; margin: 8px 0 0; padding: 0; }
+.obsicheck li.obsicheck-task { display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 10px; align-items: start; margin: 0; padding: 10px 6px 10px 0; border-bottom: 1px solid var(--background-modifier-border); }
+.obsicheck li.obsicheck-task:last-child { border-bottom-color: transparent; }
+.obsicheck .obsicheck-task:hover { background: var(--background-modifier-hover); border-radius: 5px; }
+.obsicheck input.obsicheck-checkbox { margin: 6px 0 0; width: 16px; height: 16px; cursor: pointer; }
+/* Obsidian buttons use flex centering by default; override it explicitly. */
+.obsicheck button.obsicheck-task-text { display: block; justify-content: flex-start; align-items: flex-start; padding: 3px 0; line-height: 1.6; font-size: var(--font-ui-medium); }
+.obsicheck button.obsicheck-task-text:hover { color: var(--text-accent); background: transparent; box-shadow: none; }
 .obsicheck .is-complete button.obsicheck-task-text { color: var(--text-muted); text-decoration: line-through; }
-.obsicheck-status { font-size: var(--font-ui-smaller); color: var(--text-muted); }
-.obsicheck-empty { padding: 24px 0; color: var(--text-muted); }
-.obsicheck-warning { color: var(--text-warning); }
+.obsicheck .is-dismissed button.obsicheck-task-text { color: var(--text-muted); }
+.obsicheck .obsicheck-task-actions { display: flex; align-items: center; gap: 4px; }
+.obsicheck .obsicheck-status { color: var(--text-faint); font-size: 11px; }
+.obsicheck .obsicheck-dismissed-icon { display: flex; margin-top: 6px; color: var(--text-faint); }
+.obsicheck .obsicheck-dismissed-icon svg { width: 16px; height: 16px; }
+.obsicheck .obsicheck-restore { font-size: var(--font-ui-smaller); padding: 6px 8px; }
+.obsicheck .obsicheck-empty { padding: 28px 0; text-align: left; }
+.obsicheck .obsicheck-empty-icon { color: var(--text-faint); margin-bottom: 16px; }
+.obsicheck .obsicheck-empty-icon svg { width: 28px; height: 28px; }
+.obsicheck .obsicheck-empty h3 { margin: 0 0 6px; font-size: 16px; font-weight: 600; }
+.obsicheck .obsicheck-empty p { margin: 0; color: var(--text-muted); font-size: var(--font-ui-small); line-height: 1.6; }
+.obsicheck .obsicheck-warning { color: var(--text-warning); font-size: var(--font-ui-small); }
+@media (max-width: 480px) {
+  .obsicheck { padding: 20px 16px 32px; }
+  .obsicheck .obsicheck-heading h2 { font-size: 23px; }
+  .obsicheck .obsicheck-filter { padding: 6px 8px; }
+  .obsicheck .obsicheck-icon-button { min-width: 36px; height: 36px; }
+}

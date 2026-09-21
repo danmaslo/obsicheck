@@ -1,8 +1,7 @@
-import { ItemView, Notice, Plugin, TFile, WorkspaceLeaf, type CachedMetadata } from 'obsidian';
-import { collectTasks, updateTask, type Task } from './tasks';
+import { Notice, Plugin, TFile, type CachedMetadata } from 'obsidian';
+import { collectTasks, updateTask, updateDismissal, type Task } from './tasks';
+import { TasksView, VIEW_TYPE } from './view';
 
-const VIEW_TYPE = 'obsicheck-tasks';
-type Filter = 'open' | 'done' | 'all';
 interface Entry { source: string; tasks: Task[] }
 
 export default class ObsicheckPlugin extends Plugin {
@@ -15,8 +14,8 @@ export default class ObsicheckPlugin extends Plugin {
 
   async onload() {
     this.registerView(VIEW_TYPE, leaf => new TasksView(leaf, this));
-    this.addRibbonIcon('list-checks', 'Obsicheck: Přehled úkolů', () => { void this.openView(); });
-    this.addCommand({ id: 'open-tasks', name: 'Otevřít přehled úkolů', callback: () => { void this.openView(); } });
+    this.addRibbonIcon('list-checks', 'Obsicheck: Task overview', () => { void this.openView(); });
+    this.addCommand({ id: 'open-tasks', name: 'Open task overview', callback: () => { void this.openView(); } });
     this.registerEvent(this.app.metadataCache.on('changed', (file, source, cache) => {
       this.bump(file.path);
       this.index(file, source, cache);
@@ -81,7 +80,7 @@ export default class ObsicheckPlugin extends Plugin {
       if (this.stopped || this.revisions.get(path) !== revision) return;
       this.entries.delete(path);
       this.failures.add(path);
-      console.error('Obsicheck: nelze načíst poznámku', path, error);
+      console.error('Obsicheck: could not read note', path, error);
       this.notify();
     }
   }
@@ -102,19 +101,33 @@ export default class ObsicheckPlugin extends Plugin {
   notify() { for (const listener of this.listeners) listener(); }
 
   async setCompleted(task: Task, completed: boolean, expectedSource: string): Promise<boolean> {
+    return this.mutateTask(task, expectedSource, source => updateTask(source, expectedSource, task, completed));
+  }
+
+  async setDismissed(task: Task, dismissed: boolean, expectedSource: string): Promise<boolean> {
+    return this.mutateTask(task, expectedSource, source => updateDismissal(source, expectedSource, task, dismissed));
+  }
+
+  private async mutateTask(task: Task, expectedSource: string, transform: (source: string) => string): Promise<boolean> {
     const file = this.app.vault.getAbstractFileByPath(task.path);
     const entry = this.entries.get(task.path);
     if (!(file instanceof TFile) || !entry) {
-      new Notice('Zdrojová poznámka už není dostupná.');
+      new Notice('The source note is no longer available.');
       await this.refresh();
       return false;
     }
     try {
-      await this.app.vault.process(file, source => updateTask(source, expectedSource, task, completed));
-      // Wait for the Markdown cache to publish the new task positions and statuses.
+      const updated = await this.app.vault.process(file, transform);
+      // These operations keep line positions intact. Update immediately, unless a newer
+      // cache event has already replaced this entry while the write was pending.
+      if (this.entries.get(task.path) === entry && entry.source === expectedSource) {
+        const locations = entry.tasks.map(item => ({ task: item.status, position: { start: { line: item.line } } }));
+        this.entries.set(task.path, { source: updated, tasks: collectTasks(task.path, updated, locations) });
+        this.notify();
+      }
       return true;
     } catch (error) {
-      new Notice(error instanceof Error ? error.message : 'Úkol se nepodařilo uložit.');
+      new Notice(error instanceof Error ? error.message : 'Could not save the task.');
       await this.refreshFile(file);
       return false;
     }
@@ -127,99 +140,5 @@ export default class ObsicheckPlugin extends Plugin {
       await leaf.setViewState({ type: VIEW_TYPE, active: true });
     }
     await this.app.workspace.revealLeaf(leaf);
-  }
-}
-
-class TasksView extends ItemView {
-  private filter: Filter = 'open';
-  private query = '';
-  private results!: HTMLElement;
-  private summary!: HTMLElement;
-  private timer: number | undefined;
-  private unsubscribe = () => {};
-
-  constructor(leaf: WorkspaceLeaf, private plugin: ObsicheckPlugin) { super(leaf); }
-  getViewType() { return VIEW_TYPE; }
-  getDisplayText() { return 'Obsicheck'; }
-  getIcon() { return 'list-checks'; }
-
-  async onOpen() {
-    this.contentEl.empty();
-    this.contentEl.addClass('obsicheck');
-    const heading = this.contentEl.createDiv({ cls: 'obsicheck-heading' });
-    heading.createEl('h2', { text: 'Všechny úkoly' });
-    const refresh = heading.createEl('button', { text: 'Obnovit' });
-    refresh.addEventListener('click', async () => {
-      refresh.disabled = true;
-      try { await this.plugin.refresh(); } finally { refresh.disabled = false; }
-    });
-    this.summary = this.contentEl.createDiv({ cls: 'obsicheck-summary', attr: { 'aria-live': 'polite' } });
-    const controls = this.contentEl.createDiv({ cls: 'obsicheck-controls' });
-    const search = controls.createEl('input', { type: 'search', placeholder: 'Hledat úkol nebo poznámku…', attr: { 'aria-label': 'Hledat úkol nebo poznámku' } });
-    search.addEventListener('input', () => { this.query = search.value; this.renderResults(); });
-    const select = controls.createEl('select', { attr: { 'aria-label': 'Stav úkolů' } });
-    for (const [value, text] of [['open', 'Nedokončené'], ['done', 'Hotové'], ['all', 'Všechny']]) select.createEl('option', { value, text });
-    select.value = this.filter;
-    select.addEventListener('change', () => { this.filter = select.value as Filter; this.renderResults(); });
-    this.results = this.contentEl.createDiv({ cls: 'obsicheck-results' });
-    const listener = () => {
-      if (this.timer !== undefined) return;
-      this.timer = window.setTimeout(() => { this.timer = undefined; this.renderResults(); }, 100);
-    };
-    this.plugin.listeners.add(listener);
-    this.unsubscribe = () => this.plugin.listeners.delete(listener);
-    this.renderResults();
-  }
-
-  async onClose() {
-    this.unsubscribe();
-    if (this.timer !== undefined) window.clearTimeout(this.timer);
-  }
-
-  private renderResults() {
-    const snapshots = new Map(this.plugin.entries);
-    const all = [...snapshots.values()].flatMap(entry => entry.tasks);
-    const done = all.filter(task => task.completed).length;
-    this.summary.setText(`${all.length - done} nedokončených · ${done} hotových`);
-    this.results.empty();
-    if (this.plugin.failures.size) this.results.createEl('p', { cls: 'obsicheck-warning', text: `${this.plugin.failures.size} poznámek se nepodařilo načíst. Zkus přehled obnovit.` });
-    const query = this.query.trim().toLocaleLowerCase();
-    const tasks = all.filter(task => (this.filter === 'all' || task.completed === (this.filter === 'done')) && `${task.text} ${task.path}`.toLocaleLowerCase().includes(query));
-    tasks.sort((a, b) => a.path.localeCompare(b.path) || a.line - b.line);
-    if (!tasks.length) {
-      this.results.createEl('p', { cls: 'obsicheck-empty', text: !this.plugin.ready ? 'Načítám úkoly…' : query ? 'Hledání neodpovídá žádný úkol.' : this.filter === 'done' ? 'Zatím žádné hotové úkoly.' : this.filter === 'open' && all.length ? 'Vše hotovo.' : 'Žádné úkoly. Přidej do poznámky checkbox pomocí - [ ].' });
-      return;
-    }
-    let path = '';
-    let list: HTMLElement = this.results;
-    for (const task of tasks) {
-      if (task.path !== path) {
-        path = task.path;
-        const group = this.results.createEl('section', { cls: 'obsicheck-group' });
-        const title = group.createEl('h3');
-        const link = title.createEl('button', { cls: 'obsicheck-source', text: path.replace(/\.md$/, '') });
-        link.addEventListener('click', () => { void this.openTask(task); });
-        list = group.createEl('ul');
-      }
-      const row = list.createEl('li', { cls: `obsicheck-task${task.completed ? ' is-complete' : ''}` });
-      const input = row.createEl('input', { type: 'checkbox', attr: { 'aria-label': `${task.completed ? 'Znovu otevřít' : 'Dokončit'}: ${task.text || 'Prázdný úkol'}` } });
-      input.checked = task.completed;
-      input.addEventListener('change', async () => {
-        input.disabled = true;
-        try {
-          const saved = await this.plugin.setCompleted(task, input.checked, snapshots.get(task.path)!.source);
-          if (!saved) input.checked = task.completed;
-        } finally { input.disabled = false; }
-      });
-      const text = row.createEl('button', { cls: 'obsicheck-task-text', text: task.text || '(prázdný úkol)', attr: { title: `Otevřít ${task.path}, řádek ${task.line + 1}` } });
-      text.addEventListener('click', () => { void this.openTask(task); });
-      if (task.status !== ' ' && !task.completed) row.createEl('span', { cls: 'obsicheck-status', text: `[${task.status}]` });
-    }
-  }
-
-  private async openTask(task: Task) {
-    const file = this.app.vault.getAbstractFileByPath(task.path);
-    if (!(file instanceof TFile)) { new Notice('Zdrojová poznámka už není dostupná.'); return; }
-    await this.app.workspace.getLeaf('tab').openFile(file, { eState: { line: task.line } });
   }
 }

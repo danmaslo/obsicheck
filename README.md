@@ -1,72 +1,86 @@
 # Obsicheck
 
-Plugin pro Obsidian, který sbírá checkboxy ze všech Markdown poznámek ve vaultu do jednoho přehledu.
+A quiet home for the checkboxes scattered across your Obsidian vault. Review, complete, or dismiss tasks without moving them out of their notes.
 
-- Úkoly seskupené podle zdrojové poznámky, ve stejném pořadí jako v poznámce.
-- Hledání podle textu úkolu nebo cesty poznámky.
-- Filtry **Nedokončené**, **Hotové** a **Všechny**.
-- Zaškrtnutí i opětovné otevření úkolu přímo v přehledu.
-- Kliknutí na text úkolu otevře zdrojovou poznámku na příslušném řádku.
-- Automatická aktualizace po změně, vytvoření, smazání či přejmenování poznámky.
-- Používá barvy aktuálního tématu. Bez síťových požadavků a externích služeb.
+- **One overview:** tasks grouped by note, in their original order.
+- **Quick filters:** Open, Completed, All, and Dismissed, with live counts.
+- **Dismiss and restore:** set aside tasks you no longer plan to do without marking them complete.
+- **Search:** find tasks by their text or the source note's path.
+- **Edit in place:** check off a task here and its original checkbox updates.
+- **Jump to the source:** click a task to open its note at the relevant line.
+- **Automatic updates:** follows note edits, creation, deletion, and renames.
+- **Native appearance:** left-aligned layout, light and dark theme colors, and narrow-panel support.
 
-## Instalace přes BRAT
+The interface is in English. No network requests or external services are used by the plugin.
 
-1. V nastavení BRAT zvol **Add beta plugin**.
-2. Zadej `danmaslo/obsicheck` nebo `https://github.com/danmaslo/obsicheck`.
-3. Vyber nejnovější verzi a potvrď přidání pluginu.
-4. Otevři příkaz **Obsicheck: Otevřít přehled úkolů** nebo klikni na ikonu seznamu s fajfkami v levé liště.
+## Install with BRAT
 
-Aktualizace můžeš spravovat přes BRAT. Soubory pro instalaci jsou dostupné v [GitHub Releases](https://github.com/danmaslo/obsicheck/releases).
+1. In BRAT settings, select **Add beta plugin**.
+2. Enter `danmaslo/obsicheck` or `https://github.com/danmaslo/obsicheck`.
+3. Select the latest version and add the plugin.
+4. Run **Obsicheck: Open task overview** from the command palette, or click the checklist icon in the ribbon.
 
-## Ruční instalace
+Use BRAT to check for updates. Release files are available in [GitHub Releases](https://github.com/danmaslo/obsicheck/releases).
 
-1. Stáhni z [release 0.1.0](https://github.com/danmaslo/obsicheck/releases/tag/0.1.0) a rozbal `obsicheck-0.1.0.zip` do `<vault>/.obsidian/plugins/`. Výsledkem má být složka `obsicheck` se soubory `main.js`, `manifest.json` a `styles.css`.
-2. Restartuj Obsidian nebo znovu načti aplikaci.
-3. V **Nastavení → Komunitní pluginy** povol **Obsicheck**. Pokud máš zapnutý omezený režim, je potřeba ho pro použití komunitních pluginů vypnout.
-4. Klikni na ikonu seznamu s fajfkami v levé liště, nebo spusť příkaz **Obsicheck: Otevřít přehled úkolů**.
+## Dismiss tasks
 
-Plugin prohledává aktuální vault, ne ostatní vaulty. Poznámky nemusíš přesouvat ani označovat tagem.
+Click the **×** to the right of a task to dismiss it. Dismissed tasks disappear from Open, Completed, and All; find them in **Dismissed** and click **Restore** to bring them back. Completion and dismissal are separate: dismissing an open task leaves its checkbox unchecked, and restoring it returns it to Open.
+
+Dismissal adds a hidden HTML comment to the task's source line:
 
 ```markdown
-- [ ] Nakoupit
-- [x] Odeslat nabídku
-  - [ ] Doplnit přílohu
+- [ ] An idea I no longer plan to pursue <!-- obsicheck:dismissed -->
 ```
 
-## Chování první verze
+The marker is visible in Markdown source but hidden in rendered notes. It travels with the task through note edits, renames, and vault sync. Restoring removes the marker; you can also remove it manually. Existing block IDs (`^my-task`) stay at the end of the line.
 
-- Zobrazuje skutečné checkboxy rozpoznané Markdown parserem Obsidianu; příklady v blocích kódu se do přehledu nezařazují.
-- `[x]` a `[X]` znamenají hotovo. Ostatní stavy (např. `[/]`) se zobrazí jako nedokončené s původní značkou. Dokončení nastaví `[x]`, opětovné otevření `[ ]`.
-- Text úkolu se zobrazuje jako prostý text, včetně Markdown značek. Kliknutí otevře zdroj; odkazy uvnitř textu zatím nejsou samostatně klikatelné.
-- Při souběžné změně poznámky plugin odmítne zápis ze starého přehledu a požádá o opětovné zaškrtnutí. Nemění ostatní obsah ani konce řádků.
-- Seznam se obnovuje po zpracování změny Markdown cache Obsidianu; při psaní může mít krátké zpoždění.
+## Manual installation
 
-## Vývoj
+1. Download the ZIP from the [latest release](https://github.com/danmaslo/obsicheck/releases/latest).
+2. Extract it into `<vault>/.obsidian/plugins/`. The resulting `obsicheck` folder should contain `main.js`, `manifest.json`, and `styles.css`.
+3. Reload Obsidian and enable **Obsicheck** in **Settings → Community plugins**. Restricted mode must be off to use community plugins.
+
+## Behavior
+
+- Scans Markdown notes in the current vault. No tags or special folders are required.
+- Uses Obsidian's Markdown cache to identify actual task list items, excluding examples inside code blocks.
+- `[x]` and `[X]` mean completed. Custom statuses such as `[/]` remain open and show their original marker. Completing writes `[x]`; reopening writes `[ ]`.
+- Task text is displayed as plain text, including Markdown syntax. Clicking it opens the source note; embedded links are not separately clickable.
+- If the source note changes before a write, the plugin refuses the stale edit, refreshes the list, and asks you to try again. Other content and line endings are preserved.
+- Changes from outside the overview appear once Obsidian has updated its Markdown cache.
+
+## Development
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Produkční sestavení a testy:
+Build and run task tests:
 
 ```sh
 npm run build
 npm test
 ```
 
-Pro ruční instalaci po sestavení zkopíruj `main.js`, `manifest.json` a `styles.css` do `<vault>/.obsidian/plugins/obsicheck/`.
+Run browser UI tests:
 
-Testy ověřují extrakci na základě pozic z Markdown cache a bezpečné úpravy checkboxů, včetně duplicitních úkolů, souběžných změn, Unicode a různých konců řádků. Integraci s aplikací je potřeba ověřit přímo v Obsidianu.
+```sh
+npx playwright install chromium
+npm run test:ui
+```
 
-### Ruční ověření v Obsidianu
+The browser harness runs the real plugin mutation methods and view against a small mock of the Obsidian API. It checks dismissal, restoration, completion, source navigation, stale edits, search, and narrow layouts. It also captures light/dark screenshots in `test-results/`. This does not replace testing inside Obsidian with real themes and Markdown cache events.
 
-1. Vytvoř dvě poznámky s otevřenými, hotovými a vnořenými checkboxy; přidej příklad checkboxu do bloku kódu.
-2. Otevři přehled a ověř seskupení, hledání a všechny tři filtry. Příklad z kódu se nemá zobrazit.
-3. Dokonči úkol v přehledu a zkontroluj změnu původní poznámky. Přes filtr Hotové ho znovu otevři.
-4. Uprav úkol v poznámce, přidej další, přejmenuj poznámku i složku a poznámku smaž. Přehled má změny převzít.
-5. Otevři zdroj kliknutím na text úkolu a zkontroluj cílový řádek.
-6. Vypni a znovu zapni plugin; přehled musí znovu načíst aktuální úkoly.
+For local installation, copy `main.js`, `manifest.json`, and `styles.css` to `<vault>/.obsidian/plugins/obsicheck/` after building.
 
-Implementace vychází z [oficiálního vzoru pluginu](https://github.com/obsidianmd/obsidian-sample-plugin) a používá [Vault.process()](https://docs.obsidian.md/Plugins/Vault) pro bezpečnou úpravu aktuálního obsahu poznámek.
+### Manual checks in Obsidian
+
+1. Create two notes with open, completed, nested, and custom-status tasks; add a checkbox example inside a fenced code block.
+2. Check grouping, search, and all four filters. The code example must not appear.
+3. Complete a task and reopen it. Verify the original Markdown changes.
+4. Dismiss one of two identical tasks. Only that task should disappear. Reload the plugin and restore it from Dismissed.
+5. Rename a note and its folder, add lines above a dismissed task, and edit the task text. Dismissal should persist.
+6. Try a narrow panel and both light and dark themes. Check keyboard focus and long task titles.
+
+Built using the [official plugin sample](https://github.com/obsidianmd/obsidian-sample-plugin) and [Vault.process()](https://docs.obsidian.md/Plugins/Vault) for safe source edits.
